@@ -338,16 +338,33 @@
       <pre><code>services:
   database:
     image: "postgres:16.0-alpine3.18"
-    environment:
-      POSTGRES_PASSWORD: "local_password"
+    env_file:
+      - ../.env.development
     ports:
       - "5432:5432"</code></pre>
     </div>
+    <div class="file-block">
+      <div class="file-block-header">.env.development</div>
+      <pre><code>POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_USER=local_user
+POSTGRES_DB=local_db
+POSTGRES_PASSWORD=local_password</code></pre>
+    </div>
     <ul>
       <li><code>postgres:16.0-alpine3.18</code> — imagem leve baseada em Alpine Linux</li>
-      <li><code>POSTGRES_PASSWORD</code> — senha do usuário padrão (<code>postgres</code>)</li>
+      <li><code>POSTGRES_USER</code> — define o nome do superusuário criado na inicialização (<strong>não é mais <code>postgres</code></strong>)</li>
+      <li><code>POSTGRES_DB</code> — banco criado automaticamente na inicialização</li>
+      <li><code>POSTGRES_PASSWORD</code> — senha desse usuário</li>
       <li><code>5432:5432</code> — expõe a porta do container na máquina host</li>
     </ul>
+    <div class="callout warning">
+      <div class="callout-title">POSTGRES_USER muda tudo</div>
+      Quando você define <code>POSTGRES_USER</code>, o PostgreSQL cria <strong>esse nome</strong> como superusuário
+      na primeira inicialização — o role <code>postgres</code> padrão <strong>não é criado</strong>.
+      Se tentar conectar com <code>-U postgres</code>, vai receber
+      <code>FATAL: role "postgres" does not exist</code>.
+    </div>
   </section>
 
   <!-- PASSO 7 -->
@@ -365,13 +382,29 @@
 
   <!-- PASSO 8 -->
   <section>
-    <h2><span class="step-number">8</span> Conectar ao PostgreSQL</h2>
-    <p>Com o container rodando, conecte usando o cliente <code>psql</code> via Docker
-    (sem precisar instalar o psql no WSL):</p>
-    <pre><code><span class="cmd">docker compose -f infra/compose.yaml exec database psql -U postgres</span></code></pre>
+    <h2><span class="step-number">8</span> Conectar ao PostgreSQL <span class="badge fixed">Pegadinha comum</span></h2>
+
+    <div class="callout warning">
+      <div class="callout-title">Não use -U postgres</div>
+      O usuário <code>postgres</code> só existe quando você <strong>não</strong> define <code>POSTGRES_USER</code> no env.
+      Como o projeto define <code>POSTGRES_USER=local_user</code>, o superusuário criado é <code>local_user</code>.
+      Conectar com <code>-U postgres</code> vai gerar: <code>FATAL: role "postgres" does not exist</code>.
+    </div>
+
+    <p>Use sempre o usuário e banco definidos no <code>.env.development</code>:</p>
+    <pre><code><span class="comment"># Via Docker (sem precisar instalar psql no WSL)</span>
+<span class="cmd">docker compose -f infra/compose.yaml exec database psql -U local_user -d local_db</span></code></pre>
+
     <p>Ou, se tiver o <code>psql</code> instalado localmente:</p>
-    <pre><code><span class="cmd">psql -h localhost -U postgres -p 5432</span>
+    <pre><code><span class="cmd">psql -h localhost -U local_user -d local_db -p 5432</span>
 <span class="comment"># Senha: local_password</span></code></pre>
+
+    <div class="callout info">
+      <div class="callout-title">Regra prática</div>
+      O valor de <code>-U</code> deve sempre bater com <code>POSTGRES_USER</code> do seu <code>.env</code>.
+      Se mudar o env, mude o comando de conexão também.
+    </div>
+
     <p>Dentro do psql, alguns comandos úteis:</p>
     <pre><code>\l          <span class="comment">-- lista bancos de dados</span>
 \c nome_db  <span class="comment">-- conecta a um banco</span>
@@ -400,8 +433,8 @@
 <span class="comment"># 5. Subir o banco</span>
 <span class="cmd">docker compose -f infra/compose.yaml up -d</span>
 
-<span class="comment"># 6. Conectar</span>
-<span class="cmd">docker compose -f infra/compose.yaml exec database psql -U postgres</span></code></pre>
+<span class="comment"># 6. Conectar (use o POSTGRES_USER do seu .env, não "postgres")</span>
+<span class="cmd">docker compose -f infra/compose.yaml exec database psql -U local_user -d local_db</span></code></pre>
   </section>
 
   <!-- TROUBLESHOOTING -->
@@ -424,6 +457,15 @@
 <span class="comment"># Se "docker" não aparecer, rode e abra nova sessão</span>
 <span class="cmd">sudo usermod -aG docker $USER</span>
 <span class="cmd">newgrp docker</span></code></pre>
+
+    <hr class="divider" />
+
+    <h3>Problema</h3>
+    <p><code>FATAL: role "postgres" does not exist</code></p>
+    <p><strong>Solução:</strong> você está usando <code>-U postgres</code>, mas o projeto define um usuário diferente em
+    <code>POSTGRES_USER</code>. Use o valor correto do seu <code>.env.development</code>:</p>
+    <pre><code><span class="cmd">docker compose -f infra/compose.yaml exec database psql -U local_user -d local_db</span></code></pre>
+    <p>O role <code>postgres</code> só é criado automaticamente quando <code>POSTGRES_USER</code> <strong>não</strong> está definido no env.</p>
 
     <hr class="divider" />
 
