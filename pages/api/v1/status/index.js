@@ -1,21 +1,17 @@
-import database from "infra/database.js"
+import database from "infra/database.js";
 
 async function status(request, response) {
-
-
-
   const updateAt = new Date().toISOString();
 
-  const versionResult = await database.query('SHOW server_version;');
+  const versionResult = await database.query("SHOW server_version;");
 
-  const maxConnResult = await database.query('SHOW max_connections');
+  const maxConnResult = await database.query("SHOW max_connections");
 
   const databaseName = process.env.POSTGRES_DB;
 
-  
   const openConnResult = await database.query({
     text: "SELECT COUNT(*) FROM pg_stat_activity WHERE datname = $1;",
-    values: [databaseName]
+    values: [databaseName],
   });
   // const openConnResult = await database.query("SELECT COUNT(*) FROM pg_stat_activity WHERE datname = 'local_db';");
 
@@ -27,8 +23,6 @@ async function status(request, response) {
 
   console.log(openConn);
 
-
-
   response.status(200).json({
     updated_at: updateAt,
     dependencies: {
@@ -36,12 +30,9 @@ async function status(request, response) {
         version: dbVersion,
         max_connections: parseInt(maxConn),
         current_connections: parseInt(openConn),
-      }
+      },
     },
-  
-
   });
 }
 
 export default status;
-
