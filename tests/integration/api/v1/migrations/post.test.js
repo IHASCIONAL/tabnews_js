@@ -6,7 +6,10 @@ beforeAll(async () => {
   await database.query("drop schema public cascade; create schema public;");
 });
 
-test("POST to /api/v1/migrations should return 200", async () => {
+describe("POST /api/v1/migrations", () => {
+describe("Anonymous user", () => {
+describe("Runnig pending migrations", () => {
+test("For the first time", async () => {
   const response1 = await fetch("http://localhost:3000/api/v1/migrations", {
     method: "POST",
   });
@@ -17,6 +20,11 @@ test("POST to /api/v1/migrations should return 200", async () => {
   expect(Array.isArray(response1Body)).toBe(true);
 
   expect(response1Body.length).toBeGreaterThan(0);
+});
+})
+
+
+test("For the second time", async () => {
 
   const response2 = await fetch("http://localhost:3000/api/v1/migrations", {
     method: "POST",
@@ -29,3 +37,7 @@ test("POST to /api/v1/migrations should return 200", async () => {
 
   expect(response2Body.length).toBe(0);
 });
+
+}); 
+
+}); 
