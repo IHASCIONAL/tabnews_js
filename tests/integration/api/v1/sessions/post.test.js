@@ -11,7 +11,7 @@ beforeAll(async () => {
 
 describe("POST /api/v1/sessions", () => {
   describe("Anonymous user", () => {
-    test("With correct email, inbut correct password", async () => {
+    test("With correct email, but incorrect password", async () => {
       await orchestrator.createUser({
         password: "senha-correta",
       });
@@ -95,6 +95,9 @@ describe("POST /api/v1/sessions", () => {
         email: "tudo.correto@gmail.com",
         password: "senha-correta",
       });
+
+      await orchestrator.activateUser(createdUser);
+
       const response = await fetch("http://localhost:3000/api/v1/sessions", {
         method: "POST",
         headers: {
@@ -135,7 +138,6 @@ describe("POST /api/v1/sessions", () => {
       const parsedSetCookie = setCookieParser(response, {
         map: true,
       });
-      console.log(parsedSetCookie);
 
       expect(parsedSetCookie.session_id).toEqual({
         name: "session_id",
